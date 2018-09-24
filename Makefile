@@ -10,3 +10,6 @@ run:
 
 run-r:
 	python ball.py --node=1 --join=0:R:1
+
+run-r2:
+	python ball.py --node=2 --join=1:R:2

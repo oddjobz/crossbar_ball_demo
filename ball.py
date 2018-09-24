@@ -5,16 +5,11 @@ import six
 import txaio
 import random
 import curses
-from pprint import pformat
-
 from twisted.internet import reactor
 from twisted.internet.error import ReactorNotRunning
 from twisted.internet.defer import inlineCallbacks
-
 from autobahn.twisted.util import sleep
-from autobahn.wamp.types import RegisterOptions
 from autobahn.twisted.wamp import ApplicationSession, ApplicationRunner
-from autobahn.wamp.exception import ApplicationError
 
 args = None
 debug = False
@@ -40,7 +35,7 @@ class Ball:
         self._dx = dx if dx else random.uniform(0.0, 1)
         self._dy = dy if dy else random.uniform(0.0, 1)
 
-        self.draw()
+        self.draw(1)
         if self._stdscr.getch() != -1:
             try:
                 reactor.stop()
@@ -104,13 +99,15 @@ class Ball:
         if not self.is_out():
             self._stdscr.addstr(int(self._y), int(self._x), ' ')
 
-    def draw(self):
+    def draw(self, node):
         if not self.is_out():
             try:
                 if debug:
                     print('*', self._x, self._y)
                 else:
-                    self._stdscr.addstr(int(self._y), int(self._x), '@')
+                    self._stdscr.attron(curses.A_BOLD)
+                    self._stdscr.addstr(int(self._y), int(self._x), '@', curses.color_pair(int(node)+1))
+                    self._stdscr.attroff(curses.A_BOLD)
             except:
                 if not debug:
                     curses.nocbreak()
@@ -143,6 +140,7 @@ class BallBouncer:
         self._context = context
         self._node = node
         self._stdscr = curses.initscr()
+        self._balls = []
         if not debug:
             self._stdscr.clear()
             self._stdscr.nodelay(True)
@@ -150,6 +148,9 @@ class BallBouncer:
             self._stdscr.keypad(True)
             curses.noecho()
             curses.curs_set(0)
+            curses.start_color()
+            curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
+            curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
     def __del__(self):
         if not debug:
@@ -167,25 +168,27 @@ class BallBouncer:
     @inlineCallbacks
     def create(self, ball=None):
         if not ball:
-            ball = Ball(self._stdscr, self._context)
+            self._balls.append(Ball(self._stdscr, self._context))
         while True:
-            ball.hide()
-            if not ball.move(self._edges):
-                self._stdscr.refresh()
-                return
-            ball.draw()
+            for ball in self._balls:
+                ball.hide()
+                if not ball.move(self._edges):
+                    self._balls.remove(ball)
+                else:
+                    ball.draw(self._node)
+            self._stdscr.refresh()
+            yield sleep(0)
             if self._stdscr.getch() != -1:
                 try:
                     reactor.stop()
                 except ReactorNotRunning:
                     pass
                 return
-            yield sleep(0)
 
     def catch(self, ball):
         if int(ball[0]) != int(self._node):
             return
-        self.create(Ball(self._stdscr, context=self._context, x=ball[1], y=ball[2], dx=ball[3], dy=ball[4]))
+        self._balls.append(Ball(self._stdscr, context=self._context, x=ball[1], y=ball[2], dx=ball[3], dy=ball[4]))
 
 
 class ClientSession(ApplicationSession):
@@ -231,6 +234,10 @@ class ClientSession(ApplicationSession):
             self.publish('com.demo.join', (node, edge, target))
 
         reactor.callLater(0, self._bouncer.create)
+        reactor.callLater(0, self._bouncer.create)
+        reactor.callLater(0, self._bouncer.create)
+        reactor.callLater(0, self._bouncer.create)
+        reactor.callLater(0, self._bouncer.create)
 
     def onLeave(self, details):
         self.log.info("Router session closed ({details})", details=details)
@@ -250,10 +257,9 @@ if __name__ == '__main__':
     realm = os.environ.get('CBREALM', u'AppRealm')
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug output.')
     parser.add_argument('--node', dest='node', type=six.text_type, default='0', help='A unique number to describe this node')
     parser.add_argument('--join', dest='join', type=six.text_type, default='', help='A node join string')
     args = parser.parse_args()
-    txaio.start_logging(level='debug' if args.debug else 'info')
+    txaio.start_logging(level='info')
     runner = ApplicationRunner(url=url, realm=realm)
     runner.run(ClientSession, auto_reconnect=True)

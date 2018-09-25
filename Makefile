@@ -6,7 +6,7 @@ export CBREALM = AppRealm
 export CBURL = wss://xbr-fx-1.eu-west-2.crossbar.io:443/ws
 
 all:
-	@echo 'usage: make run1|run2|run3'
+	@echo 'usage: make run1|run2|run3|run4|run5|run6'
 
 run1:
 	python ball.py --node=0 --delay=$(DELAY)

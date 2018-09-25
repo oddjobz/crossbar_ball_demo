@@ -27,6 +27,12 @@ For example;
 ```
 make run1
 ```
+If you're not using the Makefile, make sure you set environment variables CBURL and CBREALM to point
+to your Crossbar instance. If you use the default settings, expect strange results if someone else happens to be running at the same time, as you'll be pairing your windows with theirs :)
+
+I would recommend you visit https://demo1.crossbar.io, sign up to your own (free) account, then run a 
+local CrossbarFX node and pair it with your account.
+
 The current makefile is designed to cater for a matrix of 3x2 terminal windows, although you are free to 
 make up your own layout. Fundamentally you can use the following command line flags;
 ```

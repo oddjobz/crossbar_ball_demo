@@ -109,8 +109,6 @@ class Ball:
             except Exception:
                 return
 
-            self._stdscr.refresh()
-
     def throw(self, node):
         self._context.publish('com.demo.new_ball', (node, self._x, self._y, self._dx, self._dy))
         return False

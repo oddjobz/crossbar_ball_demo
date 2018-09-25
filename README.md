@@ -9,6 +9,8 @@ and would like to improve the code, PR's would be welcome! There is a deliberate
 of each panel with a view to adding a status bar for example showing the number of balls in each window
 and number of throws / catches per second, but for now I'm moving on to the next task.
 
+When running press 'b' to kick off a new ball, or any other key to exit.
+
 #### To install;
 
 Create a virtual environment, then do;

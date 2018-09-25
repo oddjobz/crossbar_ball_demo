@@ -18,7 +18,7 @@ class Ball:
 
     def __init__(self, stdscr, context, x=None, y=None, dx=None, dy=None):
         """
-        New balls please!
+        New ball please!
         """
         self._stdscr = stdscr
         self._context = context
@@ -132,7 +132,7 @@ class BallBouncer:
         self._balls = []
         self._stdscr.clear()
         self._stdscr.nodelay(True)
-        self._stdscr.timeout(10)
+        self._stdscr.timeout(int(args.delay))
         self._stdscr.keypad(True)
         curses.noecho()
         curses.curs_set(0)
@@ -140,6 +140,9 @@ class BallBouncer:
         curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(5, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
 
     def stop(self):
         curses.nocbreak()
@@ -159,6 +162,7 @@ class BallBouncer:
     @inlineCallbacks
     def create(self):
         while True:
+            self._stdscr.clear()
             for ball in self._balls:
                 ball.hide()
                 if not ball.move(self._edges):
@@ -198,8 +202,8 @@ class ClientSession(ApplicationSession):
     opposites = {
         'L': 'R',
         'R': 'L',
-        'T': 'B',
-        'B': 'T'
+        'U': 'D',
+        'D': 'U'
     }
 
     def __init__(self, *arguments, **kwargs):
@@ -226,10 +230,11 @@ class ClientSession(ApplicationSession):
         yield self.subscribe(on_new_ball, u'com.demo.new_ball')
 
         if args.join:
-            node, edge, target = args.join.split(':')
-            self.publish('com.demo.join', (node, edge, target))
+            for join in args.join.split(','):
+                node, edge, target = join.split(':')
+                self.publish('com.demo.join', (node, edge, target))
 
-        for i in range(5):
+        for i in range(1):
             self._bouncer.new_ball()
         reactor.callLater(0, self._bouncer.create)
 
@@ -247,10 +252,11 @@ class ClientSession(ApplicationSession):
 
 if __name__ == '__main__':
 
-    url = os.environ.get('CBURL', u'wss://xbr-fx-2.eu-west-2.crossbar.io/ws')
-    realm = os.environ.get('CBREALM', u'AppRealm')
+    url = os.environ.get('CBURL')
+    realm = os.environ.get('CBREALM')
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--delay', dest='delay', type=six.text_type, default='50', help='Time (ms) between moves')
     parser.add_argument('--node', dest='node', type=six.text_type, default='0', help='A unique number to describe this node')
     parser.add_argument('--join', dest='join', type=six.text_type, default='', help='A node join string')
     args = parser.parse_args()

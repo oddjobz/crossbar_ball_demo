@@ -34,3 +34,5 @@ To join node 0 with node 1 on node 0's right hand edge and 0 with 2 on node2's b
 --join=0:R:1,0:D:2
 ```
 If in doubt, take a look at the (working) Makefile .. :)
+
+[logo]: https://github.com/oddjobz/crossbar_ball_demo/balls.png "Screenshot"
